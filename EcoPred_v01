@@ -1,0 +1,87 @@
+; Firstly all the agents are created...
+breed [olives olive] ; for each agents type, both the group (plural) and individuals (singular) must be created
+breed [flies fly]
+breed [spiders spider]
+breed [flowers flower]
+
+; ...and attributes for agents are assigned
+flies-own [energy]
+
+; The "Clear" block carries the code controlled by the button "Clear" in the Interface
+to Clear
+  clear-all ; cleans the previous results and restart the situation
+  ask patches [ set pcolor 63 ] ; setting color to the ground
+
+  set-default-shape flowers "flower" ; setting shape to agents "flower"
+  create-flowers initial-number-flowers
+  [
+    set color yellow  ; setting color...
+    set size 4   ; ...and size
+    setxy random-xcor random-ycor ; flowers are randomly positioned along the scenario
+  ]
+
+  set-default-shape olives "olive" ; setting shape to agents "olive"
+  create-olives initial-number-olives
+  [
+    set color violet
+    set size 1.5
+    setxy random-xcor random-ycor ; olives are randomly positioned along the scenario
+  ]
+
+  set-default-shape flies "fly" ; setting shape to agents "fly"
+  create-flies initial-number-flies
+  [
+    set color white
+    set size 2
+    set energy  random 300 ; setting attribute energy for flies
+    setxy random-xcor random-ycor ; flies are randomly positioned along the scenario
+  ]
+
+  set-default-shape spiders "spider" ; setting shape to agents "spider"
+  create-spiders initial-number-spiders
+  [
+    set color black
+    set size 3
+    setxy random-xcor random-ycor ; spiders are randomly positioned along the scenario
+  ]
+  reset-ticks ; resetting ticks to zero
+end
+
+; The "Go" block carries the code controlled by the button "Go" in the Interface
+to Go
+ if not any? flies [stop] ; when the flies population decrease to zero, the system stops
+ ask flies [move fed reproduce tire death] ; setting behaviours for flies
+ ask spiders [eat-fly] ; setting behaviours for spiders
+ display-energy ; allowing to show energy of flies in the Interface
+ tick ; advancing one step in time
+ end
+
+to move
+  ask flies [right random 20 left random 20 forward 2] ; flies will move around the crop
+
+end
+
+to fed
+  ask flies [if any? flowers-on patch-ahead 1[set energy energy + 50]] ; flies will feed if a flower is found and its energy will increase in "x" units
+end
+
+to reproduce
+  ask flies [if any? olives-on patch-ahead 1[hatch-flies 1 [right random 20 left random 20 forward 1]]] ; flies will reproduce if an olive is found hatching one more fly (that will move the same way than its parents)
+end
+
+to tire
+  ask flies [set energy energy - 2] ; flies will lose "x" units of energy when moving around
+end
+
+to death
+  ask flies [if energy < 0 [die]] ; flies will die if energy decreases to zero
+  ask flies [if count flies > 50 [user-message "Your crop have been invaded!" die]] ; if more than "x" flies are counted within the crop, the system will stop and show the message
+end
+
+to eat-fly
+  ask flies [if any? spiders-on patch-ahead 1 [die]] ; if a fly-spider encounter occurs, the spider will eat the fly
+end
+
+to display-energy
+  if Display-energy? [ask flies[set label round energy]] ; if the button is turned "on", flies energy will be shown
+end

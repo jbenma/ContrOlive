@@ -6,7 +6,6 @@ breed [ground-spiders spider2]
 breed [flowers flower]
 breed [stones stone]
 breed [web-males webmale]
-breed [parasitoids parasitoid]
 
 ; ...and attributes for agents are assigned
 flies-own [energy]
@@ -30,16 +29,16 @@ to Clear
   set-default-shape olives "olive" ; setting shape to agents "olive"
   create-olives initial-number-olives
   [
-    set color violet
-    set size 1.5
+    set color violet ; setting color...
+    set size 1.5 ; ...and size
     setxy random-xcor random-ycor ; olives are randomly positioned along the scenario
   ]
 
   set-default-shape flies "fly" ; setting shape to agents "fly"
   create-flies initial-number-flies
   [
-    set color white
-    set size 2
+    set color white ; setting color...
+    set size 2 ; ...and size
     set energy 50 ; setting attribute energy for flies
     setxy random-xcor random-ycor ; flies are randomly positioned along the scenario
   ]
@@ -47,27 +46,27 @@ to Clear
   set-default-shape web-females "web-female" ; setting shape to agents "web-female"
   create-web-females initial-number-web-females
   [
-    set color black
-    set size 3
-    set energy 50
+    set color black ; setting color...
+    set size 3 ; ...and size
+    set energy 50 ; ...and energy
     setxy random-xcor random-ycor ; spiders are randomly positioned along the scenario
   ]
 
   set-default-shape web-males "web-male" ; setting shape to agents "web-male"
   create-web-males initial-number-web-males
   [
-    set color black
-    set size 2
-    set energy 50
+    set color black ; setting color...
+    set size 2 ; ...and size
+    set energy 50 ; ...and energy
     setxy random-xcor random-ycor ; spiders are randomly positioned along the scenario
   ]
 
    set-default-shape ground-spiders "ground-spider" ; setting shape to agents "ground-spider"
   create-ground-spiders initial-number-ground-spiders
   [
-    set color brown
-    set size 3
-    set energy 50
+    set color brown ; setting color...
+    set size 3 ; ...and size
+    set energy 50 ; ...and energy
     setxy random-xcor random-ycor ; spiders are randomly positioned along the scenario
   ]
 
@@ -84,29 +83,37 @@ end
 
 ; The "Go" block carries the code controlled by the button "Go" in the Interface
 to Go
- if not any? flies [stop] ; if more than "x" flies are counted within the crop, the system will stop and show the message
- if count flies > 2000 [user-message "Your crop have been invaded!" stop]
+ if not any? flies [stop] ; if there are no flies within the crop, the system stops
+ if count flies > 2000 [user-message "Your crop have been invaded!" stop] ; if more than "x" flies are counted within the crop, the system will stop and show the message
  if count web-females > 1000 [stop]
  if count web-males > 1000 [stop]
  if count ground-spiders > 1000 [stop]
+
+; Simulating some immigration of spiders with the same attributes as within the initial conditions
+ if (initial-number-web-females > 0) or (initial-number-web-males > 0) or (initial-number-ground-spiders > 0) ; Condition to avoid the entrance of spiders when the fly population is simulated alone
+  [create-web-males 1 [
+    set color black
+    set size 2
+    set energy 50
+    setxy random-xcor random-ycor
+  ]
+ create-ground-spiders 1 [set color brown
+    set size 3
+    set energy 50
+    setxy random-xcor random-ycor
+  ]]
+
+  ; What the different turtles will do?...
  ask flies [move fed reproduce death set energy energy - 1 ] ; setting behaviours for flies
  ask web-females [fed-a reproduce-a death set energy energy - 1 ] ; setting behaviours for spiders
- ask web-males [move fed-b reproduce-b maintain-b death set energy energy - 1 ] ; setting behaviours for spiders
- ask ground-spiders [move-b fed-c reproduce-c maintain-c death set energy energy - 1 ] ; setting behaviours for spiders
+ ask web-males [move fed-b reproduce-b death set energy energy - 1 ] ; setting behaviours for spiders
+ ask ground-spiders [move-b fed-c reproduce-c death set energy energy - 1 ] ; setting behaviours for spiders
  tick ; advancing one step in time
  end
 
-
-to maintain-b
-  if count web-males <= 15 [hatch 10 [setxy random-xcor random-ycor]]
-end
-
-to maintain-c
-  if count ground-spiders <= 15 [hatch 10 [setxy random-xcor random-ycor]]
-end
-
+; ...and How it will be done?
 to move
- right random 20 left random 20 forward 1 ; flies will move around the crop
+ right random 20 left random 20 forward 1 ; flies and web-males will move around the crop
  end
 
 to move-b
@@ -115,45 +122,44 @@ end
 
 
 to fed
-  if any? flowers-on patch-ahead 1 [set energy energy + 15] ; flies will feed if a flower is found and its energy will increase in "x" units
+ if any? flowers-on patch-ahead 1 [set energy energy + (count flowers-on patch-ahead 1 * 30)] ; flies will feed if a flower is found and its energy will increase in "x" units
 end
 
 to fed-a
-if any? flies-on patch-ahead 1 [set energy energy + 15]
-ask flies-on patch-ahead 1 [die]
+ if any? flies-on patch-ahead 1 [set energy energy + (count flies-on patch-ahead 1 * 5)]
+ ask flies-on patch-ahead 1 [die]
 end
 
 to fed-b
-if any? flies-on patch-ahead 1 [set energy energy + 15]
-ask flies-on patch-ahead 1 [die]
+ if any? flies-on patch-ahead 1 [set energy energy + (count flies-on patch-ahead 1 * 5)]
+ ask flies-on patch-ahead 1 [die]
 end
 
 to fed-c
-if any? flies-on patch-ahead 1 [set energy energy + 15]
-ask flies-on patch-ahead 1 [die]
-
-if any? web-males-on patch-here [set energy energy + 15]
-ask web-males-on patch-here [die]
+ if any? flies-on patch-ahead 1 [set energy energy + (count flies-on patch-ahead 1 * 10)]
+ ask flies-on patch-ahead 1 [die]
+ if any? web-males-on patch-here [set energy energy + (count web-males-on patch-here * 10)]
+ ask web-males-on patch-here [die]
 end
 
 
 to reproduce
-  if any? olives-on patch-here [hatch-flies 2 [right random 20 left random 20 forward 10]] ; flies will reproduce if an olive is found hatching one more fly (that will move the same way than its parents)
+  if any? olives-on patch-here [set energy (energy / 4) hatch-flies 3 [setxy random-xcor random-ycor]] ; flies will reproduce if an olive is found hatching 3 more fly (that will move the same way than its parents)
 end
 
 to reproduce-a
-  if any? web-males-on patch-here [hatch-web-females 1 [setxy random-xcor random-ycor]]
+  if any? web-males-on patch-here [set energy (energy / 2) hatch-web-females 1 [setxy random-xcor random-ycor]]
 end
 
 to reproduce-b
-  if any? web-females-on patch-here [hatch-web-males 1 [setxy random-xcor random-ycor]]
+  if any? web-females-on patch-here [set energy (energy / 2) hatch-web-males 1 [setxy random-xcor random-ycor] ]
 end
 
 to reproduce-c
-  if any? stones-on patch-here [hatch-ground-spiders 1 [setxy random-xcor random-ycor]]
+  if any? stones-on patch-here [set energy (energy / 2) hatch-ground-spiders 1 [setxy random-xcor random-ycor]]
 end
 
 
 to death
-if energy < 1 [die] ; flies will die if energy decreases to zero
+if energy < 1 [die] ; turtles will die if energy decreases to zero
 end
